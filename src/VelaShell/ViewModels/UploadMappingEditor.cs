@@ -13,12 +13,13 @@ internal sealed record UploadDirectoryListing(string Path, IReadOnlyList<UploadD
 /// <summary>绑定窗口的目录导航,只提交成功的列举,不持有主资源管理器状态。</summary>
 internal sealed class UploadDirectoryPane(
     Func<string, string, CancellationToken, Task<UploadDirectoryListing>> list,
-    Func<string, string> parent) : ReactiveObject, IDisposable
+    Func<string, string> parent, bool isLocal = false) : ReactiveObject, IDisposable
 {
     private readonly CancellationTokenSource _lifetime = new();
     private CancellationTokenSource? _navigation;
     private long _version;
     private bool _disposed;
+    public bool IsLocal { get; } = isLocal;
     public ObservableCollection<UploadDirectoryItem> Entries { get; } = [];
     public string CurrentPath { get; private set => this.RaiseAndSetIfChanged(ref field, value); } = string.Empty;
     public string InputPath { get; set => this.RaiseAndSetIfChanged(ref field, value); } = string.Empty;
@@ -36,6 +37,10 @@ internal sealed class UploadDirectoryPane(
     }
     public string SelectedPath => SelectedItem?.FullPath ?? CurrentPath;
     public Task<bool> GoUpAsync() => NavigateAsync(parent(CurrentPath));
+    internal void ReportError(string message)
+    {
+        if (!_disposed) { ErrorMessage = message; }
+    }
 
     public async Task<bool> NavigateAsync(string path)
     {
@@ -133,7 +138,7 @@ internal sealed class UploadMappingEditor : IDisposable
             IReadOnlyList<LocalFileSystemEntry> entries = await local.EnumerateAsync(path, ct);
             return new(path, [.. entries.Where(item => item.IsDirectory)
                 .Select(item => new UploadDirectoryItem(item.Name, item.FullPath))]);
-        }, path => Path.GetDirectoryName(path) ?? Path.GetPathRoot(path) ?? path);
+        }, path => Path.GetDirectoryName(path) ?? Path.GetPathRoot(path) ?? path, isLocal: true);
     }
 
     public bool CanSave => Remote.HasLoaded && Local.HasLoaded && !Remote.IsBusy && !Local.IsBusy;

@@ -10021,6 +10021,7 @@ Windows는 exe 전체 경로 또는 명령 이름(예: notepad), Linux는 명령
   <data name="Sftp_UploadMappingLocal" xml:space="preserve"><value>로컬 폴더</value></data>
   <data name="Sftp_UploadMappingPath" xml:space="preserve"><value>폴더 경로</value></data>
   <data name="Sftp_UploadMappingOpen" xml:space="preserve"><value>폴더 열기</value></data>
+  <data name="Sftp_UploadMappingChoose" xml:space="preserve"><value>선택</value></data>
   <data name="Sftp_UploadMappingParent" xml:space="preserve"><value>상위 폴더</value></data>
   <data name="Sftp_UploadMappingInvalidRemote" xml:space="preserve"><value>원격 폴더를 확인할 수 없습니다.</value></data>
   <data name="Sftp_UploadMappingInvalidLocal" xml:space="preserve"><value>로컬 폴더 경로를 입력하세요.</value></data>

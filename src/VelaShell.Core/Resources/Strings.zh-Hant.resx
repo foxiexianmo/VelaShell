@@ -10506,6 +10506,7 @@ Windows 填 exe 完整路徑或命令名稱(如 notepad);Linux 填命令名稱(�
   <data name="Sftp_UploadMappingLocal" xml:space="preserve"><value>本機目錄</value></data>
   <data name="Sftp_UploadMappingPath" xml:space="preserve"><value>目錄路徑</value></data>
   <data name="Sftp_UploadMappingOpen" xml:space="preserve"><value>開啟目錄</value></data>
+  <data name="Sftp_UploadMappingChoose" xml:space="preserve"><value>選擇</value></data>
   <data name="Sftp_UploadMappingParent" xml:space="preserve"><value>上一層</value></data>
   <data name="Sftp_UploadMappingInvalidRemote" xml:space="preserve"><value>無法解析遠端目錄。</value></data>
   <data name="Sftp_UploadMappingInvalidLocal" xml:space="preserve"><value>請輸入本機目錄路徑。</value></data>

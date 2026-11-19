@@ -10027,6 +10027,7 @@ Send anyway?</value>
   <data name="Sftp_UploadMappingLocal" xml:space="preserve"><value>Local directory</value></data>
   <data name="Sftp_UploadMappingPath" xml:space="preserve"><value>Directory path</value></data>
   <data name="Sftp_UploadMappingOpen" xml:space="preserve"><value>Open directory</value></data>
+  <data name="Sftp_UploadMappingChoose" xml:space="preserve"><value>Select</value></data>
   <data name="Sftp_UploadMappingParent" xml:space="preserve"><value>Parent directory</value></data>
   <data name="Sftp_UploadMappingInvalidRemote" xml:space="preserve"><value>The remote directory could not be resolved.</value></data>
   <data name="Sftp_UploadMappingInvalidLocal" xml:space="preserve"><value>Enter a local directory path.</value></data>

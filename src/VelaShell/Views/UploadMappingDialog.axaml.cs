@@ -2,6 +2,8 @@ using System.ComponentModel;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Platform.Storage;
+using VelaShell.Core.Resources;
 using VelaShell.Core.Sftp;
 using VelaShell.Services;
 using VelaShell.ViewModels;
@@ -14,6 +16,10 @@ public partial class UploadMappingDialog : Window
     private UploadMappingEditor? _editor;
     private bool _closed;
     private bool _saving;
+    private bool _choosingLocalDirectory;
+    private bool CanBrowse => !_closed && !_saving && !_choosingLocalDirectory;
+
+    internal Func<string, Task<string?>>? PickLocalDirectory { get; set; }
 
     /// <summary>创建绑定窗口;无参构造供设计期和外框检查使用。</summary>
     public UploadMappingDialog()
@@ -43,14 +49,55 @@ public partial class UploadMappingDialog : Window
     private void OnPaneChanged(object? sender, PropertyChangedEventArgs e) => UpdateState();
     private void UpdateState()
     {
-        SaveButton.IsEnabled = !_closed && !_saving && _editor?.CanSave == true;
-        ContentArea.IsEnabled = !_saving;
+        SaveButton.IsEnabled = CanBrowse && _editor?.CanSave == true;
+        ContentArea.IsEnabled = CanBrowse;
+    }
+
+    private void OnChooseLocalDirectory(object? sender, RoutedEventArgs e) => FireAndForget.Run(ChooseLocalDirectoryAsync);
+    private async Task ChooseLocalDirectoryAsync()
+    {
+        if (!CanBrowse || _editor is not { } editor) { return; }
+        _choosingLocalDirectory = true;
+        UpdateState();
+        try
+        {
+            string? path;
+            if (PickLocalDirectory is { } pick)
+            {
+                path = await pick(editor.Local.CurrentPath);
+            }
+            else
+            {
+                IStorageFolder? start = await StorageDefaults.FolderAsync(this, editor.Local.CurrentPath);
+                if (_closed) { return; }
+                IReadOnlyList<IStorageFolder> folders = await StorageProvider.OpenFolderPickerAsync(new()
+                {
+                    Title = Strings.Get("Sftp_UploadChooseDirectory"),
+                    AllowMultiple = false,
+                    SuggestedStartLocation = start,
+                });
+                path = folders.Count > 0 ? folders[0].TryGetLocalPath() : null;
+            }
+            if (!_closed && !string.IsNullOrEmpty(path))
+            {
+                await editor.Local.NavigateAsync(path);
+            }
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            if (!_closed) { editor.Local.ReportError(Strings.Format("Sftp_UploadDirectoryPickerFailed", ex.Message)); }
+        }
+        finally
+        {
+            _choosingLocalDirectory = false;
+            if (!_closed) { UpdateState(); }
+        }
     }
 
     private void OnOpenPath(object? sender, RoutedEventArgs e) => NavigateInput(sender);
     private void NavigateInput(object? sender)
     {
-        if (!_saving && sender is Control { DataContext: UploadDirectoryPane pane })
+        if (CanBrowse && sender is Control { DataContext: UploadDirectoryPane pane })
         {
             FireAndForget.Run(async () => { await pane.NavigateAsync(pane.InputPath); });
         }
@@ -65,14 +112,14 @@ public partial class UploadMappingDialog : Window
     }
     private void OnParent(object? sender, RoutedEventArgs e)
     {
-        if (!_saving && sender is Control { DataContext: UploadDirectoryPane pane })
+        if (CanBrowse && sender is Control { DataContext: UploadDirectoryPane pane })
         {
             FireAndForget.Run(async () => { await pane.GoUpAsync(); });
         }
     }
     private void OnRefresh(object? sender, RoutedEventArgs e)
     {
-        if (!_saving && sender is Control { DataContext: UploadDirectoryPane pane })
+        if (CanBrowse && sender is Control { DataContext: UploadDirectoryPane pane })
         {
             FireAndForget.Run(async () => { await pane.NavigateAsync(pane.CurrentPath); });
         }
@@ -88,7 +135,7 @@ public partial class UploadMappingDialog : Window
     }
     private void EnterSelected(object? sender)
     {
-        if (!_saving && sender is ListBox { DataContext: UploadDirectoryPane pane, SelectedItem: UploadDirectoryItem item })
+        if (CanBrowse && sender is ListBox { DataContext: UploadDirectoryPane pane, SelectedItem: UploadDirectoryItem item })
         {
             FireAndForget.Run(async () => { await pane.NavigateAsync(item.FullPath); });
         }
@@ -96,7 +143,7 @@ public partial class UploadMappingDialog : Window
     private void OnSave(object? sender, RoutedEventArgs e) => FireAndForget.Run(SaveAsync);
     private async Task SaveAsync()
     {
-        if (_saving || _editor?.CanSave != true)
+        if (!CanBrowse || _editor?.CanSave != true)
         {
             return;
         }

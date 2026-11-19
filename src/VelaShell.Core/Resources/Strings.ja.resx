@@ -10021,6 +10021,7 @@ Windows は exe のフルパスまたはコマンド名(例: notepad)、Linux �
   <data name="Sftp_UploadMappingLocal" xml:space="preserve"><value>ローカルフォルダー</value></data>
   <data name="Sftp_UploadMappingPath" xml:space="preserve"><value>フォルダーのパス</value></data>
   <data name="Sftp_UploadMappingOpen" xml:space="preserve"><value>フォルダーを開く</value></data>
+  <data name="Sftp_UploadMappingChoose" xml:space="preserve"><value>選択</value></data>
   <data name="Sftp_UploadMappingParent" xml:space="preserve"><value>親フォルダー</value></data>
   <data name="Sftp_UploadMappingInvalidRemote" xml:space="preserve"><value>リモートフォルダーを解決できません。</value></data>
   <data name="Sftp_UploadMappingInvalidLocal" xml:space="preserve"><value>ローカルフォルダーのパスを入力してください。</value></data>

@@ -16,8 +16,13 @@
                    FontFamily="{DynamicResource VelaUiMonoFont}" FontSize="{DynamicResource VelaFontSize11}"
                    AutomationProperties.Name="{loc:Localize Sftp_UploadMappingPath}" />
           <Button Grid.Column="1" Content="{loc:Localize Sftp_UploadMappingOpen}"
+                  IsVisible="{Binding !IsLocal}"
                   Theme="{DynamicResource VelaOutlineButtonTheme}" Margin="6,0,0,0"
                   Height="28" Click="OnOpenPath" />
+          <Button Grid.Column="1" Content="{loc:Localize Sftp_UploadMappingChoose}"
+                  IsVisible="{Binding IsLocal}"
+                  Theme="{DynamicResource VelaOutlineButtonTheme}" Margin="6,0,0,0"
+                  Height="28" Click="OnChooseLocalDirectory" />
         </Grid>
         <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="6" Margin="0,0,0,8">
           <Button Content="{loc:Localize Sftp_UploadMappingParent}" Click="OnParent"

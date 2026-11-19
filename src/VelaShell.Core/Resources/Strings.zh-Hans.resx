@@ -10506,6 +10506,7 @@ Windows 填 exe 完整路径或命令名(如 notepad);Linux 填命令名(如 ged
   <data name="Sftp_UploadMappingLocal" xml:space="preserve"><value>本地目录</value></data>
   <data name="Sftp_UploadMappingPath" xml:space="preserve"><value>目录路径</value></data>
   <data name="Sftp_UploadMappingOpen" xml:space="preserve"><value>打开目录</value></data>
+  <data name="Sftp_UploadMappingChoose" xml:space="preserve"><value>选择</value></data>
   <data name="Sftp_UploadMappingParent" xml:space="preserve"><value>上一级</value></data>
   <data name="Sftp_UploadMappingInvalidRemote" xml:space="preserve"><value>无法解析远端目录。</value></data>
   <data name="Sftp_UploadMappingInvalidLocal" xml:space="preserve"><value>请输入本地目录路径。</value></data>
