@@ -407,12 +407,12 @@ public partial class LocalFilePaneView : UserControl
             if (this.FindAncestorOfType<SftpDocumentView>()?.DataContext is not SftpDocumentViewModel sftpVm) return;
 
             // 由路径解析远端条目,且不修改远端的选中集合。
-            RemoteFileInfoViewModel[] entries = remotePaths
+            IReadOnlyList<RemoteFileInfoViewModel> entries = FileBrowserView.ActiveDragEntries(sftpVm.RemoteFiles, e.DataTransfer) ?? remotePaths
                 .Select(p => sftpVm.RemoteFiles.Files.FirstOrDefault(f => f.FullPath == p))
                 .Where(e => e is not null && !e.IsParentEntry)
                 .ToArray()!;
 
-            if (entries.Length > 0)
+            if (entries.Count > 0)
             {
                 try
                 {

@@ -10032,4 +10032,10 @@ Send anyway?</value>
   <data name="Sftp_UploadMappingInvalidRemote" xml:space="preserve"><value>The remote directory could not be resolved.</value></data>
   <data name="Sftp_UploadMappingInvalidLocal" xml:space="preserve"><value>Enter a local directory path.</value></data>
   <data name="Sftp_UploadMappingRemoteUnavailable" xml:space="preserve"><value>Cannot open the remote directory: {0}. The previous mapping is unchanged.</value></data>
+  <data name="Sftp_DragPathTooLong" xml:space="preserve"><value>The dragged path is too long: {0}</value></data>
+  <data name="Sftp_DragNotDropped" xml:space="preserve"><value>Drop the files in a local folder first.</value></data>
+  <data name="Sftp_DragUnsafeCache" xml:space="preserve"><value>The drag download cache is unavailable.</value></data>
+  <data name="Sftp_DragSourceChanged" xml:space="preserve"><value>The remote file changed after preparation: {0}</value></data>
+  <data name="Sftp_DragFailed" xml:space="preserve"><value>Drag download failed: {0}</value></data>
+  <data name="Sftp_DragAwaitingDelivery" xml:space="preserve"><value>Downloaded; waiting for the system</value></data>
 </root>

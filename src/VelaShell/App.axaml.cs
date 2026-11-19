@@ -331,6 +331,7 @@ public class App : Application
                     Infrastructure.Plugins.PluginPackageDownloads.Sweep(storagePaths.PluginUpdateDirectory);
                 StagedRelaySource.SweepStale();
                 Infrastructure.XServer.SftpXServerDragDownloader.CleanupStaleDownloads();
+                RemoteDragDownload.Cleanup();
                 // 内置编辑器崩溃留下的临时副本(关窗才删,进程没了就没人删):7 天没碰过的清掉。
                 BuiltInEditTempFiles.SweepStale(BuiltInEditTempFiles.TempBase, DateTime.UtcNow);
                 // 外部编辑的副本按状态标记分:干净的同样 7 天后清;有未传改动的(含没有标记的旧副本)是草稿,

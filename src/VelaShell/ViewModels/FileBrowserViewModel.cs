@@ -23,7 +23,7 @@ public sealed record BreadcrumbSegment(string Name, string Path);
 /// SFTP 文件浏览面板的视图模型:承载目录列举、导航、上传/下载、增删改与属性/权限
 /// 编辑等操作,并把传输进度反馈到右上角传输浮窗。每个已连接会话绑定一个实例。
 /// </summary>
-public class FileBrowserViewModel : ReactiveObject
+public partial class FileBrowserViewModel : ReactiveObject
 {
     private const long MaxBuiltInEditSize = 5 * 1024 * 1024;
 

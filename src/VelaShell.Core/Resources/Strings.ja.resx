@@ -10026,4 +10026,10 @@ Windows は exe のフルパスまたはコマンド名(例: notepad)、Linux �
   <data name="Sftp_UploadMappingInvalidRemote" xml:space="preserve"><value>リモートフォルダーを解決できません。</value></data>
   <data name="Sftp_UploadMappingInvalidLocal" xml:space="preserve"><value>ローカルフォルダーのパスを入力してください。</value></data>
   <data name="Sftp_UploadMappingRemoteUnavailable" xml:space="preserve"><value>リモートフォルダーを開けません: {0}。元のマッピングは変更されていません。</value></data>
+  <data name="Sftp_DragPathTooLong" xml:space="preserve"><value>ドラッグするパスが長すぎます: {0}</value></data>
+  <data name="Sftp_DragNotDropped" xml:space="preserve"><value>先にローカルフォルダーへドロップしてください。</value></data>
+  <data name="Sftp_DragUnsafeCache" xml:space="preserve"><value>ドラッグ用のダウンロードキャッシュを利用できません。</value></data>
+  <data name="Sftp_DragSourceChanged" xml:space="preserve"><value>準備後にリモートファイルが変更されました: {0}</value></data>
+  <data name="Sftp_DragFailed" xml:space="preserve"><value>ドラッグによるダウンロードに失敗しました: {0}</value></data>
+  <data name="Sftp_DragAwaitingDelivery" xml:space="preserve"><value>ダウンロード済み・システムへの受け渡し待ち</value></data>
 </root>

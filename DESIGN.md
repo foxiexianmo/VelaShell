@@ -472,6 +472,11 @@ The existing SFTP file browser is the primary reusable component for the dual-pa
 
 **Selection:** `VelaBgHover` replaces default theme blue (style on `ListBoxItem:selected`)
 
+**Remote row gestures on Windows:** dragging anywhere in a file or directory row exports a copy to Explorer;
+only genuinely empty list space starts marquee selection. Preserve Ctrl/Shift multi-selection and exclude `..`,
+scrollbars and column splitters. Internal pane transfers keep their original source snapshot. Local lists and
+the upload picker retain their existing marquee policy; other platforms retain their existing remote gestures.
+
 **Parent row (`..`):** `VelaBgHover` background, no bottom border
 
 **Hover:** `VelaBgHover` on `Border.file-row:pointerover` (scoped to avoid context menu bleed)

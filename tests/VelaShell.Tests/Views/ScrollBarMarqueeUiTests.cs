@@ -100,6 +100,8 @@ public sealed class ScrollBarMarqueeUiTests
             ];
             sftp.ListDirectoryAsync(sessionId, Arg.Any<string>(), Arg.Any<CancellationToken>())
                 .Returns(Task.FromResult(files));
+            sftp.GetFileInfoAsync(sessionId, Arg.Any<string>(), Arg.Any<CancellationToken>())
+                .Returns(call => Task.FromResult(files.Single(file => file.FullPath == (string)call[1])));
 
             var vm = new FileBrowserViewModel(sftp, sessionId)
             {
@@ -111,8 +113,11 @@ public sealed class ScrollBarMarqueeUiTests
             vm.RefreshCommand.Execute().Subscribe();
             PumpUntil(() => vm.Files.Count > 0, "目录列举没能在预期时间内完成。");
 
-            var view = new FileBrowserView { DataContext = vm };
+            int exports = 0;
+            var view = new FileBrowserView { DataContext = vm, ExternalDragEnabled = true,
+                StartExternalDrag = (download, _) => { exports++; download.Dispose(); return Task.CompletedTask; } };
             RunScrollBarDrag(view, () => vm.SelectedFiles.Count);
+            Assert.AreEqual(0, exports, "Dragging the scrollbar must not export a row underneath it.");
         });
     }
 
@@ -153,7 +158,7 @@ public sealed class ScrollBarMarqueeUiTests
             bool overlayEverVisible = false;
             for (int step = 1; step <= 6; step++)
             {
-                window.MouseMove(new(start.X, start.Y + (20.0 * step)));
+                window.MouseMove(new(start.X, start.Y + (20.0 * step)), RawInputModifiers.LeftMouseButton);
                 Pump(window);
                 overlayEverVisible |= overlay.IsVisible;
             }

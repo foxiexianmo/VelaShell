@@ -10511,4 +10511,10 @@ Windows 填 exe 完整路徑或命令名稱(如 notepad);Linux 填命令名稱(�
   <data name="Sftp_UploadMappingInvalidRemote" xml:space="preserve"><value>無法解析遠端目錄。</value></data>
   <data name="Sftp_UploadMappingInvalidLocal" xml:space="preserve"><value>請輸入本機目錄路徑。</value></data>
   <data name="Sftp_UploadMappingRemoteUnavailable" xml:space="preserve"><value>無法開啟遠端目錄：{0}。已保留原映射。</value></data>
+  <data name="Sftp_DragPathTooLong" xml:space="preserve"><value>無法拖出路徑過長的項目：{0}</value></data>
+  <data name="Sftp_DragNotDropped" xml:space="preserve"><value>請先將檔案放到本機目錄。</value></data>
+  <data name="Sftp_DragUnsafeCache" xml:space="preserve"><value>拖出下載快取無法使用。</value></data>
+  <data name="Sftp_DragSourceChanged" xml:space="preserve"><value>遠端檔案在準備後發生變化：{0}</value></data>
+  <data name="Sftp_DragFailed" xml:space="preserve"><value>拖出下載失敗：{0}</value></data>
+  <data name="Sftp_DragAwaitingDelivery" xml:space="preserve"><value>已下載，等待系統接收</value></data>
 </root>

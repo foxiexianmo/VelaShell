@@ -19,6 +19,8 @@ using VelaShell.Core.Data;
 using VelaShell.Core.Resources;
 using VelaShell.Core.Sftp;
 using VelaShell.ViewModels;
+using VelaShell.Services;
+using KeyModifiers = Avalonia.Input.KeyModifiers;
 using FireAndForget = VelaShell.Services.FireAndForget;
 
 namespace VelaShell.Views;
@@ -65,6 +67,10 @@ public partial class FileBrowserView : UserControl
     private readonly List<RemoteFileInfoViewModel> _selectionAtPress = [];
     private bool _selectionRestoredForPendingDrag;
     private const double DragThreshold = 5;
+    private CancellationTokenSource? _dragPreparation;
+    private bool _nativeDragRunning;
+    internal bool ExternalDragEnabled { get; set; } = OperatingSystem.IsWindows();
+    internal Func<RemoteDragDownload, string, Task>? StartExternalDrag { get; set; }
 
     /// <summary>按下拖拽条那一刻的列宽快照(列键 → 像素),拖拽期间按位移量增量应用。</summary>
     private readonly Dictionary<string, double> _startWidths = [];
@@ -77,6 +83,7 @@ public partial class FileBrowserView : UserControl
         // VM 无法访问 Avalonia 的存储 API;由视图提供操作系统的选择器。
         DataContextChanged += (_, _) =>
         {
+            if (!_nativeDragRunning) { _dragPreparation?.Cancel(); }
             _viewModel?.DirectoryChanged -= OnDirectoryChanged;
             _viewModel?.PathEditActivated -= OnPathEditActivated;
             _viewModel?.RevealRequested -= OnRevealRequested;
@@ -106,8 +113,7 @@ public partial class FileBrowserView : UserControl
             FilePaneLayoutMemory.RestoreColumns(this, vm);
         };
 
-        // 框选与跨栏拖放使用不相交的按下表面。终端模式没有拖放时,
-        // 所有行内容也都留给框选。
+        // Windows:整行用于拖出,只有真正空白处起框;其它平台保持原来的跨栏表面。
         if (this.FindControl<ListBox>("FileList") is { } list
             && this.FindControl<Border>("MarqueeOverlay") is { } overlay)
         {
@@ -115,8 +121,9 @@ public partial class FileBrowserView : UserControl
                 list,
                 overlay,
                 item => item is RemoteFileInfoViewModel { IsParentEntry: false },
-                e => DataContext is not FileBrowserViewModel { IsDragEnabled: true }
-                    || !MarqueeSelection.IsDndSurface(e.Source, FileList, e.GetPosition(FileList))
+                e => ExternalDragEnabled ? RemoteRowAt(e.Source, e.GetPosition(FileList)) is null
+                    : DataContext is not FileBrowserViewModel { IsDragEnabled: true }
+                        || !MarqueeSelection.IsDndSurface(e.Source, FileList, e.GetPosition(FileList))
             );
         }
 
@@ -130,8 +137,9 @@ public partial class FileBrowserView : UserControl
             fileList.AddHandler(PointerPressedEvent, OnRemoteDragPointerPressedBubble, RoutingStrategies.Bubble, true);
 
             // 跨面板拖拽发起(行 → 本地面板)。
-            fileList.AddHandler(PointerMovedEvent, OnRemoteDragPointerMoved);
+            fileList.AddHandler(PointerMovedEvent, OnRemoteDragPointerMoved, RoutingStrategies.Bubble, true);
             fileList.AddHandler(PointerReleasedEvent, OnRemoteDragPointerReleased, RoutingStrategies.Bubble, true);
+            fileList.PointerCaptureLost += (_, _) => { if (!_nativeDragRunning) { _dragPreparation?.Cancel(); } };
 
             // 键入定位:焦点在这一栏里时直接敲文件名开头几个字母就选中它,资源管理器同款。
             // 挂在这个视图自己身上:双栏的另一栏、终端都不受影响;路径输入框里的键入它不碰。
@@ -147,12 +155,19 @@ public partial class FileBrowserView : UserControl
         // Ctrl+L 切到手动输入路径(浏览器/文件管理器的通用手势)。走隧道,免得先被
         // 文件列表的键盘导航吃掉。F5 / F2 / Delete 同一个处理器(见 FilePaneKeys)。
         AddHandler(KeyDownEvent, OnFileBrowserKeyDown, RoutingStrategies.Tunnel);
+        DetachedFromVisualTree += (_, _) => { if (!_nativeDragRunning) { _dragPreparation?.Cancel(); } };
     }
 
     // ---- 手动输入路径(#226)-------------------------------------------------
 
     private void OnFileBrowserKeyDown(object? sender, KeyEventArgs e)
     {
+        if (e.Key == Key.Escape && _dragPreparation is { } preparation && !_nativeDragRunning)
+        {
+            preparation.Cancel();
+            e.Handled = true;
+            return;
+        }
         if (DataContext is not FileBrowserViewModel vm)
         {
             return;
@@ -571,7 +586,15 @@ public partial class FileBrowserView : UserControl
     private static PeerDrag? _activeRemoteDrag;
 
     /// <summary>一次远程行拖拽的来源栏与条目。</summary>
-    private sealed record PeerDrag(FileBrowserViewModel Source, IReadOnlyList<RemoteFileInfoViewModel> Entries);
+    private sealed record PeerDrag(FileBrowserViewModel Source, IReadOnlyList<RemoteFileInfoViewModel> Entries)
+    {
+        internal string Text => DragDropFormats.RemotePaths + string.Join("\n", Entries.Select(entry => entry.FullPath));
+    }
+
+    internal static IReadOnlyList<RemoteFileInfoViewModel>? ActiveDragEntries(FileBrowserViewModel source, IDataTransfer data) =>
+        _activeRemoteDrag is { } drag && ReferenceEquals(drag.Source, source) && data.TryGetText() == drag.Text ? drag.Entries : null;
+
+    private static bool IsActiveRemoteDrag(IDataTransfer data) => _activeRemoteDrag is { } drag && data.TryGetText() == drag.Text;
 
     /// <summary>这次拖放是不是双栏远程文档里另一栏拖过来的行;是则给出那次拖拽。</summary>
     private static PeerDrag? PeerDragFor(FileBrowserViewModel target, DragEventArgs e) =>
@@ -589,6 +612,12 @@ public partial class FileBrowserView : UserControl
         if (DataContext is not FileBrowserViewModel vm)
         {
             e.DragEffects = DragDropEffects.None;
+            return;
+        }
+        if (IsActiveRemoteDrag(e.DataTransfer))
+        {
+            e.DragEffects = PeerDragFor(vm, e) is not null ? DragDropEffects.Copy : DragDropEffects.None;
+            e.Handled = true;
             return;
         }
         // 接受操作系统文件拖入、跨面板的本地文件拖拽(VFTPL 文本标记),以及双栏远程文档里另一栏的行。
@@ -612,6 +641,7 @@ public partial class FileBrowserView : UserControl
             await vm.ReceiveFromPeerAsync(peerDrag.Entries);
             return;
         }
+        if (IsActiveRemoteDrag(e.DataTransfer)) { e.Handled = true; return; }
         IReadOnlyList<string> paths = ExtractLocalPaths(e);
         if (paths.Count == 0)
         {
@@ -884,17 +914,7 @@ public partial class FileBrowserView : UserControl
     {
         if (!e.GetCurrentPoint(null).Properties.IsRightButtonPressed)
         {
-            // 左键:为可能拖往本地面板做准备(仅 SFTP 模式)。
-            if (DataContext is FileBrowserViewModel { IsDragEnabled: true }
-                && sender is Border { DataContext: RemoteFileInfoViewModel file }
-                && !file.IsParentEntry
-                && MarqueeSelection.IsDndSurface(e.Source, (Visual)sender, e.GetPosition((Visual)sender)))
-            {
-                _dragOrigin = e.GetPosition(this.FindControl<ListBox>("FileList"));
-                _dragRow = file;
-                _dragPointerArgs = e;
-                _isDragging = false;
-            }
+            // Left-button drag preparation runs in the list tunnel before ListBoxItem handles selection.
             return;
         }
         if (
@@ -958,6 +978,15 @@ public partial class FileBrowserView : UserControl
                 _selectionAtPress.Add(file);
             }
         }
+        if (DataContext is FileBrowserViewModel browser && (ExternalDragEnabled || browser.IsDragEnabled)
+            && RemoteRowAt(e.Source, e.GetPosition(FileList)) is { IsParentEntry: false } row
+            && (ExternalDragEnabled || MarqueeSelection.IsDndSurface(e.Source, FileList, e.GetPosition(FileList))))
+        {
+            _dragOrigin = e.GetPosition(FileList);
+            _dragRow = row;
+            _dragPointerArgs = e;
+            _isDragging = false;
+        }
     }
 
     private void OnRemoteDragPointerPressedBubble(object? sender, PointerPressedEventArgs e)
@@ -994,11 +1023,14 @@ public partial class FileBrowserView : UserControl
         }
 
         _isDragging = true;
-        _ = StartRemoteDragAsync(_dragRow, _dragPointerArgs);
+        RemoteFileInfoViewModel row = _dragRow;
+        PointerPressedEventArgs press = _dragPointerArgs;
+        FireAndForget.Run(() => StartRemoteDragAsync(row, press));
     }
 
     private void OnRemoteDragPointerReleased(object? sender, PointerReleasedEventArgs e)
     {
+        if (!_nativeDragRunning) { _dragPreparation?.Cancel(); }
         if (!_isDragging
             && _selectionRestoredForPendingDrag
             && _dragRow is { } source
@@ -1011,6 +1043,7 @@ public partial class FileBrowserView : UserControl
 
     private async Task StartRemoteDragAsync(RemoteFileInfoViewModel source, PointerPressedEventArgs pointerArgs)
     {
+        if (_activeRemoteDrag is not null) { ResetRemoteDragGesture(); return; }
         if (DataContext is FileBrowserViewModel vm)
         {
             IReadOnlyList<RemoteFileInfoViewModel> entries = DragSelectionResolver.ResolveAtDragStart(
@@ -1023,18 +1056,54 @@ public partial class FileBrowserView : UserControl
             DragSelectionResolver.SynchronizeSelection(vm.SelectedFiles, entries);
             string[] paths = [.. entries.Select(item => item.FullPath)];
             // 登记这次拖拽的来源,供双栏远程文档的另一栏认领(见 _activeRemoteDrag)。
-            _activeRemoteDrag = new(vm, entries);
+            var active = new PeerDrag(vm, entries.ToArray());
+            _activeRemoteDrag = active;
             try
             {
-                await StartRemoteDragAsync(paths, pointerArgs);
+                if (ExternalDragEnabled)
+                {
+                    using var preparing = new CancellationTokenSource();
+                    _dragPreparation = preparing;
+                    RemoteDragDownload download = await vm.PrepareDragDownloadAsync(active.Entries, preparing.Token);
+                    try
+                    {
+                        preparing.Token.ThrowIfCancellationRequested();
+                        _nativeDragRunning = true;
+                        pointerArgs.Pointer.Capture(null);
+                        if (StartExternalDrag is { } start) { await start(download, active.Text); }
+                        else if (OperatingSystem.IsWindows()) { WindowsRemoteFileDrag.Run(download, active.Text); }
+                        else { download.Dispose(); }
+                    }
+                    catch { download.Dispose(); throw; }
+                }
+                else { await StartRemoteDragAsync(paths, pointerArgs); }
             }
+            catch (OperationCanceledException) { }
+            catch (Exception ex) { vm.ErrorMessage = Strings.Format("Sftp_DragFailed", ex.Message); }
             finally
             {
-                _activeRemoteDrag = null;
+                _nativeDragRunning = false;
+                _dragPreparation = null;
+                if (ReferenceEquals(_activeRemoteDrag, active)) { _activeRemoteDrag = null; }
+                ResetRemoteDragGesture();
             }
             return;
         }
         await StartRemoteDragAsync([source.FullPath], pointerArgs);
+    }
+
+    private RemoteFileInfoViewModel? RemoteRowAt(object? source, Point point)
+    {
+        if ((source as Visual)?.FindAncestorOfType<ScrollBar>(includeSelf: true) is not null) { return null; }
+        if ((source as Visual)?.FindAncestorOfType<ListBoxItem>(includeSelf: true) is { DataContext: RemoteFileInfoViewModel file }) { return file; }
+        foreach (Border row in FileList.GetVisualDescendants().OfType<Border>().Where(row => row.Classes.Contains("file-row")))
+        {
+            if (row.IsVisible && row.TranslatePoint(default, FileList) is { } origin && new Rect(origin, row.Bounds.Size).Contains(point))
+            {
+                return row.DataContext as RemoteFileInfoViewModel;
+            }
+        }
+        return null;
     }
 
     private async Task StartRemoteDragAsync(

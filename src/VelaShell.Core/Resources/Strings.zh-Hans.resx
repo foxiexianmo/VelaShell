@@ -10511,4 +10511,10 @@ Windows 填 exe 完整路径或命令名(如 notepad);Linux 填命令名(如 ged
   <data name="Sftp_UploadMappingInvalidRemote" xml:space="preserve"><value>无法解析远端目录。</value></data>
   <data name="Sftp_UploadMappingInvalidLocal" xml:space="preserve"><value>请输入本地目录路径。</value></data>
   <data name="Sftp_UploadMappingRemoteUnavailable" xml:space="preserve"><value>无法打开远端目录：{0}。已保留原映射。</value></data>
+  <data name="Sftp_DragPathTooLong" xml:space="preserve"><value>无法拖出路径过长的条目：{0}</value></data>
+  <data name="Sftp_DragNotDropped" xml:space="preserve"><value>请先将文件放到本地目录。</value></data>
+  <data name="Sftp_DragUnsafeCache" xml:space="preserve"><value>拖出下载缓存不可用。</value></data>
+  <data name="Sftp_DragSourceChanged" xml:space="preserve"><value>远端文件在准备后发生变化：{0}</value></data>
+  <data name="Sftp_DragFailed" xml:space="preserve"><value>拖出下载失败：{0}</value></data>
+  <data name="Sftp_DragAwaitingDelivery" xml:space="preserve"><value>已下载，等待系统接收</value></data>
 </root>

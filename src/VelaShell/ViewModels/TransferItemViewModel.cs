@@ -139,6 +139,17 @@ public class TransferItemViewModel : ReactiveObject
         }
     }
 
+    internal bool IsAwaitingExternalDelivery
+    {
+        get;
+        set
+        {
+            this.RaiseAndSetIfChanged(ref field, value);
+            this.RaisePropertyChanged(nameof(ProgressText));
+            this.RaisePropertyChanged(nameof(InfoLine));
+        }
+    }
+
     /// <summary>自动重试到了第几次(0 = 还没重试过)。</summary>
     public int RetryAttempt { get; private set; }
 
@@ -203,6 +214,7 @@ public class TransferItemViewModel : ReactiveObject
         // 取消了就写「已取消」:停在半截的「37%」看着像还在传,点了 × 也看不出停没停。
         TransferStatus.Cancelled => Strings.Get("Transfer_Cancelled"),
         _ when IsActive && IsPreparingSource => Strings.Get("Transfer_PreparingSource"),
+        _ when IsActive && IsAwaitingExternalDelivery => Strings.Get("Sftp_DragAwaitingDelivery"),
         // 失败了正等着自动重试:说清是第几次,免得看着像又回去排队了。
         TransferStatus.Queued when RetryAttempt > 0 => Strings.Format("Transfer_RetryWaiting", RetryAttempt, RetryLimit),
         // 排队中显示"等待中"而不是 0%:0% 看着像卡住,而它其实还没轮到。
@@ -215,6 +227,7 @@ public class TransferItemViewModel : ReactiveObject
     {
         get
         {
+            if (IsActive && IsAwaitingExternalDelivery) { return Strings.Get("Sftp_DragAwaitingDelivery"); }
             if (IsActive && IsPreparingSource)
             {
                 return $"{Direction} {Strings.Get("Transfer_PreparingSource")}";
